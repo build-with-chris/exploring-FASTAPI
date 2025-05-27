@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recipie Keeper</title>
+    <link rel="stylesheet" href="static/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Shadows+Into+Light&display=swap" rel="stylesheet">
+</head>
+<body class="recipe-app">
+<div class="form-container">
+    <div id="hero">
+        <h1>Save your Favorite Recipies locally</h1>
+        <h3>Please enter all the questions, that are asked</h3>
+        <form class="recipe-form">
+            <div class="form-group">
+                <label for="title">Titel</label>
+                <input class="input-field" type="text" id="title" placeholder="Lasagne"/>
+            </div>
+            <div class="form-group">
+                <label for="ingredients">Ingeredients</label>
+                <input class="input-field" id="ingredients" type="text" placeholder="Tomatos, Capsicum, etc."/>
+            </div>
+            <div class="form-group">
+                <label for="steps">Steps</label>
+                <textarea id="steps" class="input-field" placeholder="1. Gemüse schneiden, 2. Ofen vorheizen, ..."></textarea>
+            </div>
+            <div class="form-group">
+                <label for="recipeImage">Recipe Image URL:</label>
+                <input type="url" class="input-field" id="recipeImage" name="recipeImage" placeholder="http://example.com/my-dish.jpg">
+            </div>
+            <button type="submit" id="submit">Add Recipe</button>
+        </form>
+    
+</div>
+
+</div>
+<div class="recipe-block">
+    <h2>Your recipes</h2>
+    <div class="recipe-collection">
+    <div class="recipe-card">
+
+    </div>
+    </div>
+</div>
+
+
+    <script src="script.js"></script>
+</body>
+</html>
