@@ -63,8 +63,10 @@ class Recipe(BaseModel):
         ingredients (list[str]): List of ingredients for the recipe.
     """
     id: int = None
-    name: str
+    title: str
     ingredients: list[str]
+    steps: str
+    recipeImage: str
 
 
 @app.get("/recipes")
