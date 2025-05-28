@@ -15,6 +15,21 @@ async function loadRecipes() {
     }
 }
 
+
+async function addRecipe(recipeData) {
+  const response = await fetch('http://localhost:8000/recipes', {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify(recipeData)
+  });
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err.detail || 'error while adding');
+  }
+  return await response.json();
+}
+
+
 document.addEventListener('DOMContentLoaded', () => {
     loadRecipes();
     recipeForm.addEventListener('submit', async (event) => {
@@ -27,21 +42,15 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!title || !ingredients || !steps || !recipeImage) {
         alert('Fill out all fields');
         return;
-      }  
-  
+      };  
+      const recipeData = {
+        title,
+        ingredients: ingredients.split(',').map(i => i.trim()),
+        steps,
+        recipeImage
+      };
       try {
-        const response = await fetch('http://localhost:8000/recipes', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            title: title, 
-            ingredients: ingredients.split(',').map(i => i.trim()),
-            steps: steps, 
-            recipeImage: recipeImage 
-        })
-        });
-        if (!response.ok) throw new Error('error while adding');
-        const newRecipe = await response.json();
+        const newRecipe = await addRecipe(recipeData)
         recipes.push(newRecipe);
         renderRecipes();
         recipeForm.reset();
@@ -62,11 +71,15 @@ function renderRecipes() {
     <p><strong>Steps:</strong> ${r.steps}</p>
     <img src="${r.recipeImage}" class="recipe-image">
     
-    <div>
+    <div class="change">
     <button type="button" class="delete" data-index="${i}">❌</button>
-    </div></div>
+ 
+    <button type="button" class="edit" data-index="${i}"> ✏️ </button>
+    </div>
+    </div>
 `).join('');
     deleteRecipe();
+    editRecipe();
 }
 
 function deleteRecipe() {
@@ -92,3 +105,41 @@ function deleteRecipe() {
 });
 }
 
+function editRecipe() {
+    document.querySelectorAll('.edit').forEach(btn => {
+        btn.addEventListener('click', async() => {
+            const idx = Number(btn.dataset.index);
+            const recipeId = recipes[idx].id;
+            const current = recipes[idx]
+            const newTitle = prompt("Enter new title: ", current.title);
+            if (!newTitle) return; 
+            const ingString = Array.isArray(current.ingredients) ? current.ingredients.join(', ') : current.ingredients
+            const newIngredients = prompt("Enter new ingredients: ", ingString)
+            const newSteps = prompt("New-steps: ", current.steps)
+            const newImage = prompt("New image-URL: ", current.recipeImage)
+
+            updatedRecipe = {
+                title: newTitle,
+                ingredients: newIngredients.split(',').map(i => i.trim()),
+                steps: newSteps,
+                recipeImage: newImage
+            }
+        try {
+            const response = await fetch(`http://localhost:8000/recipes/${recipeId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(updatedRecipe)
+            });
+            const data = await response.json()
+            recipes[idx] = data;
+            renderRecipes()
+            alert("Recipe has been edited successfully")
+
+        } catch (err) {
+            console.log(err)
+            alert('Something went wrong')
+        }
+        })
+    
+})
+}
