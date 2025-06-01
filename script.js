@@ -64,23 +64,77 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 function renderRecipes() {
-    recipeCollection.innerHTML = recipes.map( (r, i) => `
-    <div class="recipe-card">
-    <h3>${r.title}</h3>
-    <p><strong>Ingredientes:</strong> ${r.ingredients}</p>
-    <p><strong>Steps:</strong> ${r.steps}</p>
-    <img src="${r.recipeImage}" class="recipe-image">
-    
-    <div class="change">
-    <button type="button" class="delete" data-index="${i}">❌</button>
- 
-    <button type="button" class="edit" data-index="${i}"> ✏️ </button>
-    </div>
-    </div>
-`).join('');
+
+    // Container leeren
+    recipeCollection.innerHTML = '';
+  
+    recipes.forEach((r, i) => {
+      const ingString = Array.isArray(r.ingredients)
+        ? r.ingredients.join(', ')
+        : r.ingredients;
+  
+      const cardHTML = `
+        <div class="recipe-card">
+          <!-- Anzeige-Modus -->
+          <div class="recipe-view">
+            <h3>${r.title}</h3>
+            <p><strong>Ingredients:</strong> ${ingString}</p>
+            <p><strong>Steps:</strong> ${r.steps}</p>
+            <img src="${r.recipeImage}" class="recipe-image" alt="Image of ${r.title}">
+            <div class="change">
+              <button type="button" class="delete" data-index="${i}">❌</button>
+              <button type="button" class="edit" data-index="${i}">✏️ Edit</button>
+            </div>
+          </div>
+  
+          <!-- Bearbeiten-Modus (initial versteckt) -->
+          <form class="edit-form" data-index="${i}" style="display: none; margin-top: 10px;">
+            <div>
+              <label for="editTitle-${i}">Titel:</label>
+              <input
+                type="text"
+                id="editTitle-${i}"
+                name="editTitle"
+                value="${r.title}"
+              />
+            </div>
+            <div>
+              <label for="editIngredients-${i}">Ingredients:</label>
+              <input
+                type="text"
+                id="editIngredients-${i}"
+                name="editIngredients"
+                value="${ingString}"
+              />
+            </div>
+            <div>
+              <label for="editSteps-${i}">Steps:</label>
+              <textarea
+                id="editSteps-${i}"
+                name="editSteps"
+              >${r.steps}</textarea>
+            </div>
+            <div>
+              <label for="editImage-${i}">Image URL:</label>
+              <input
+                type="url"
+                id="editImage-${i}"
+                name="editImage"
+                value="${r.recipeImage}"
+              />
+            </div>
+            <button type="submit" class="save-edit">Save</button>
+            <button type="button" class="cancel-edit">Cancel</button>
+          </form>
+        </div>
+      `;
+      recipeCollection.insertAdjacentHTML('beforeend', cardHTML);
+    });
+  
     deleteRecipe();
-    editRecipe();
-}
+    attachEditListeners();
+  }
+
 
 function deleteRecipe() {
     document.querySelectorAll('.delete').forEach(btn => {
@@ -105,41 +159,61 @@ function deleteRecipe() {
 });
 }
 
-function editRecipe() {
-    document.querySelectorAll('.edit').forEach(btn => {
-        btn.addEventListener('click', async() => {
-            const idx = Number(btn.dataset.index);
-            const recipeId = recipes[idx].id;
-            const current = recipes[idx]
-            const newTitle = prompt("Enter new title: ", current.title);
-            if (!newTitle) return; 
-            const ingString = Array.isArray(current.ingredients) ? current.ingredients.join(', ') : current.ingredients
-            const newIngredients = prompt("Enter new ingredients: ", ingString)
-            const newSteps = prompt("New-steps: ", current.steps)
-            const newImage = prompt("New image-URL: ", current.recipeImage)
 
-            updatedRecipe = {
-                title: newTitle,
-                ingredients: newIngredients.split(',').map(i => i.trim()),
-                steps: newSteps,
-                recipeImage: newImage
-            }
-        try {
-            const response = await fetch(`http://localhost:8000/recipes/${recipeId}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(updatedRecipe)
-            });
-            const data = await response.json()
-            recipes[idx] = data;
-            renderRecipes()
-            alert("Recipe has been edited successfully")
+function attachEditListeners() {
+  document.querySelectorAll('.edit').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const idx = btn.dataset.index;
+      const form = document.querySelector(`.edit-form[data-index="${idx}"]`);
+      form.style.display = 'block';
+      form.querySelector('input[name="editTitle"]').focus();
+    });
+  });
 
-        } catch (err) {
-            console.log(err)
-            alert('Something went wrong')
-        }
-        })
-    
-})
+  document.querySelectorAll('.cancel-edit').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const form = btn.closest('form.edit-form');
+      form.style.display = 'none';
+    });
+  });
+
+  document.querySelectorAll('.edit-form').forEach(form => {
+    form.addEventListener('submit', async event => {
+      event.preventDefault(); 
+
+      const idx = Number(form.dataset.index);
+      const recipeId = recipes[idx].id;
+
+      const newTitle = form.querySelector('input[name="editTitle"]').value.trim();
+      const ingString = form.querySelector('input[name="editIngredients"]').value.trim();
+      const newSteps = form.querySelector('textarea[name="editSteps"]').value.trim();
+      const newImage = form.querySelector('input[name="editImage"]').value.trim();
+
+      const updatedRecipe = {
+        title: newTitle,
+        ingredients: ingString.split(',').map(i => i.trim()),
+        steps: newSteps,
+        recipeImage: newImage
+      };
+
+      try {
+        const response = await fetch(`http://localhost:8000/recipes/${recipeId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(updatedRecipe)
+        });
+        if (!response.ok) throw new Error('Server-Fehler beim Bearbeiten');
+
+        const data = await response.json();
+        recipes[idx] = data;
+
+        renderRecipes();
+        alert('Recipe has been edited successfully');
+      } catch (err) {
+        console.log(err);
+        alert('Something went wrong');
+      }
+    });
+  })
 }
+  
